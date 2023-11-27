@@ -80,9 +80,10 @@ class HomeAssistantDevice():
         # Add to collection of device sensors
         self.sensors.append(sensor)
 
-    def publish_numbers(self) -> None:
+    def publish_numbers(self, **kwargs) -> None:
         """Publish all number data"""
         topic = f"{self.number_topic}/state"
+        qos = kwargs.get("qos", 1)
 
         msg = {}
         for number in self.numbers:
@@ -93,18 +94,19 @@ class HomeAssistantDevice():
             print(f"Publishing to {topic}:")
             print(f"{json.dumps(msg)}")
 
-        self.network_send_fxn(msg=json.dumps(msg), topic=topic, retain=True, qos=1)
+        self.network_send_fxn(msg=json.dumps(msg), topic=topic, retain=True, qos=qos, **kwargs)
 
-    def publish_sensors(self) -> None:
+    def publish_sensors(self, **kwargs) -> None:
         """Publish all cached sensor data"""
         topic = f"{self.sensor_topic}/state"
+        qos = kwargs.get("qos", 1)
 
         for msg in self.sensor_data_cache:
             if self.debug:
                 print(f"Publishing to {topic}:")
                 print(f"{json.dumps(msg)}")
 
-            self.network_send_fxn(msg=json.dumps(msg), topic=topic, retain=True, qos=1)
+            self.network_send_fxn(msg=json.dumps(msg), topic=topic, retain=True, qos=qos, **kwargs)
 
         self.sensor_data_cache = []
 
@@ -124,8 +126,10 @@ class HomeAssistantDevice():
 
         return data
 
-    def send_discovery(self):
+    def send_discovery(self, **kwargs):
         """Send discovery data to Home Assistant"""
+        qos = kwargs.get("qos", 1)
+
         for sensor in self.sensors:
             if self.debug:
                 print(f"Discovery topic: {sensor.discovery_topic}")
@@ -134,7 +138,8 @@ class HomeAssistantDevice():
             self.network_send_fxn(msg=json.dumps(sensor.discovery_info),
                                   topic=sensor.discovery_topic,
                                   retain=True,
-                                  qos=1)
+                                  qos=qos,
+                                  **kwargs)
 
         for number in self.numbers:
             if self.debug:
@@ -144,4 +149,5 @@ class HomeAssistantDevice():
             self.network_send_fxn(msg=json.dumps(number.discovery_info),
                                   topic=number.discovery_topic,
                                   retain=True,
-                                  qos=1)
+                                  qos=qos,
+                                  **kwargs)
