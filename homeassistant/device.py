@@ -1,6 +1,6 @@
 import binascii
 import json
-import microcontroller
+import machine
 import os
 
 from homeassistant import DISCOVERY_PREFIX
@@ -19,11 +19,11 @@ class HomeAssistantDevice():
         self.network_send_fxn = network_send_fxn
         self.debug = debug
         self.mf = platform
-        self.device_id = f"{self.model}-{binascii.hexlify(microcontroller.cpu.uid).decode()}"
+        self.device_id = f"{self.model}-{binascii.hexlify(machine.unique_id()).decode('utf-8')}"
         self.number_topic = f"{DISCOVERY_PREFIX}/number/{self.device_id}"
         self.sensor_topic = f"{DISCOVERY_PREFIX}/sensor/{self.device_id}"
         self.discovery_device = {
-            "ids": f"{binascii.hexlify(microcontroller.cpu.uid).decode()}",
+            "ids": f"{binascii.hexlify(machine.unique_id()).decode('utf-8')}",
             "mf": f"{self.mf}",
             "mdl": f"{os.uname().machine}",
             "name": f"{self.device_name}",
