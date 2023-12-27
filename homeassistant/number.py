@@ -26,7 +26,7 @@ class HomeAssistantNumber():
             "min": min_value,
             "max": max_value,
             "step": step,
-            "cmd_tpl": f"{{ '{name}': {{{{ value }}}} }}"
+            "cmd_tpl": f'{{"{self.name}": {{{{ value }}}} }}'
         }
         if device_class:
             self.discovery_info["device_class"] = device_class
