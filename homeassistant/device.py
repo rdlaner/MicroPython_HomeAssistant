@@ -1,8 +1,22 @@
+"""
+device.py
+
+# TODO: Create a base class for event, number, sensor since they all have a common
+        set of functions.
+"""
+
+# Standard imports
 import binascii
 import json
 import machine
 import os
+from sys import platform
+try:
+    from typing import Any, Callable, Dict, List, Optional
+except ImportError:
+    pass
 
+# Third party imports
 from homeassistant import DISCOVERY_PREFIX
 from homeassistant.system_log import HomeAssistantSysLogEntry
 from homeassistant.number import HomeAssistantNumber
@@ -30,9 +44,9 @@ class HomeAssistantDevice():
             "name": f"{self.device_name}",
             "sw": f"{os.uname().version}"
         }
-        self.numbers = []
-        self.sensors = []
-        self.sensor_data_cache = []
+        self.numbers: List[HomeAssistantNumber] = []
+        self.sensors: List[HomeAssistantSensor] = []
+        self.sensors_msg = {}
 
     def add_number(self, number: HomeAssistantNumber):
         if self.debug:
@@ -86,6 +100,7 @@ class HomeAssistantDevice():
 
         # Add to collection of device sensors
         self.sensors.append(sensor)
+        self.sensors_msg[sensor.sanitized_name] = None
 
     def publish_logs(self, logs: list, **kwargs) -> None:
         """Publish logs to Home Assistant via the logs topic.
@@ -145,28 +160,33 @@ class HomeAssistantDevice():
         topic = f"{self.sensor_topic}/state"
         qos = kwargs.get("qos", 1)
 
-        for msg in self.sensor_data_cache:
+        total_samples = max(len(sensor.cache) for sensor in self.sensors)
+        for _ in range(total_samples):
+            for sensor in self.sensors:
+                if data := sensor.pop_cache():
+                    self.sensors_msg[sensor.sanitized_name] = data
+
             if self.debug:
                 print(f"Publishing to {topic}:")
-                print(f"{json.dumps(msg)}")
+                print(f"{json.dumps(self.sensors_msg)}")
 
-            self.network_send_fxn(msg=json.dumps(msg), topic=topic, retain=True, qos=qos, **kwargs)
+            self.network_send_fxn(msg=json.dumps(self.sensors_msg), topic=topic, retain=True, qos=qos, **kwargs)
 
-        self.sensor_data_cache = []
+    def read(self, sensor: HomeAssistantSensor, cache: bool = True) -> Any:
+        """Read an individual sensor
+           Data will be saved for publishing if cache == True"""
+        if sensor not in self.sensors:
+            raise RuntimeError(f"Sensor {sensor.name} not registered with device {self.device_name}")
 
-    def read_sensors(self, cache: bool = True) -> dict:
+        return sensor.read(cache=cache)
+
+    def read_sensors(self, cache: bool = True) -> Dict:
         """Read data from all added sensors.
            Data will be saved for publishing if cache == True"""
         data = {}
-        cached_data = {}
         for sensor in self.sensors:
-            sensor_data = sensor.read()
-            data[sensor.sanitized_name] = sensor_data
-            if cache:
-                cached_data[sensor.sanitized_name] = sensor_data
-
-        if cache:
-            self.sensor_data_cache.append(cached_data)
+            sensor_data = sensor.read(cache=cache)
+            data[sensor.name] = sensor_data
 
         return data
 

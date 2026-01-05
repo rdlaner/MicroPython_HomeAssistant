@@ -13,6 +13,7 @@ class HomeAssistantSensor():
         self.read_fxn = read_fxn
         self.precision = precision
         self.device_name = ""
+        self.cache = []
 
         # Default discovery info
         self.discovery_topic = f"{DISCOVERY_PREFIX}/sensor/{self.sanitized_name}/config"
@@ -26,8 +27,18 @@ class HomeAssistantSensor():
         if unit:
             self.discovery_info["unit_of_meas"] = unit
 
-    def read(self):
-        return self.read_fxn()
+    def pop_cache(self):
+        if self.cache:
+            return self.cache.pop(0)
+
+        return None
+
+    def read(self, cache: bool = True):
+        data = self.read_fxn()
+        if cache:
+            self.cache.append(data)
+
+        return data
 
     def set_device_name(self, name: str) -> None:
         self.device_name = name
