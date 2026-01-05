@@ -3,21 +3,22 @@ from homeassistant import DISCOVERY_PREFIX
 
 class HomeAssistantSensor():
     def __init__(self,
-                 sensor_name: str,
+                 name: str,
                  read_fxn,
                  precision: int = 0,
                  device_class: str = None,
                  unit: str = None) -> None:
-        self.sensor_name = sensor_name
+        self.name = name
+        self.sanitized_name = name.replace(' ', '_')
         self.read_fxn = read_fxn
         self.precision = precision
         self.device_name = ""
 
         # Default discovery info
-        self.discovery_topic = f"{DISCOVERY_PREFIX}/sensor/{self.sensor_name.replace(' ', '_')}/config"
+        self.discovery_topic = f"{DISCOVERY_PREFIX}/sensor/{self.sanitized_name}/config"
         self.discovery_info = {
-            "~": f"{DISCOVERY_PREFIX}/sensor/{self.sensor_name.replace(' ', '_')}",
-            "name": f"{sensor_name}",
+            "~": f"{DISCOVERY_PREFIX}/sensor/{self.sanitized_name}",
+            "name": f"{name}",
             "stat_t": "~/state"
         }
         if device_class:

@@ -12,14 +12,15 @@ class HomeAssistantNumber():
                  mode: str = None,
                  unit: str = None) -> None:
         self.name = name
+        self.sanitized_name = name.replace(' ', '_')
         self.read_fxn = read_fxn
         self.precision = precision
         self.device_name = ""
 
         # Default discovery info
-        self.discovery_topic = f"{DISCOVERY_PREFIX}/number/{self.name.replace(' ', '_')}/config"
+        self.discovery_topic = f"{DISCOVERY_PREFIX}/number/{self.sanitized_name}/config"
         self.discovery_info = {
-            "~": f"{DISCOVERY_PREFIX}/number/{self.name.replace(' ', '_')}",
+            "~": f"{DISCOVERY_PREFIX}/number/{self.sanitized_name}",
             "name": f"{name}",
             "stat_t": "~/state",
             "cmd_t": "~/cmd",

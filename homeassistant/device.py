@@ -39,7 +39,7 @@ class HomeAssistantDevice():
 
         # Prepend device name to sensor name to further differentiate it
         number.set_device_name(
-            f"{self.device_name}_{number.name.replace(' ', '_')}")
+            f"{self.device_name}_{number.sanitized_name}")
 
         # Update sensor discovery info with device details
         number_unique_id = f"{self.device_id}_{number.device_name}"
@@ -50,7 +50,7 @@ class HomeAssistantDevice():
         number.set_discovery_info("dev", self.discovery_device)
         number.set_discovery_info(
             "val_tpl",
-            f"{{{{ value_json.{number.name.replace(' ', '_')} | round({number.precision}) }}}}"
+            f"{{{{ value_json.{number.sanitized_name} | round({number.precision}) }}}}"
         )
 
         # Add to collection of device numbers
@@ -58,11 +58,11 @@ class HomeAssistantDevice():
 
     def add_sensor(self, sensor: HomeAssistantSensor):
         if self.debug:
-            print(f"Adding sensor: {sensor.sensor_name}")
+            print(f"Adding sensor: {sensor.name}")
 
         # Prepend device name to sensor name to further differentiate it
         sensor.set_device_name(
-            f"{self.device_name}_{sensor.sensor_name.replace(' ', '_')}")
+            f"{self.device_name}_{sensor.sanitized_name}")
 
         # Update sensor discovery info with device details
         sensor_unique_id = f"{self.device_id}_{sensor.device_name}"
@@ -74,7 +74,7 @@ class HomeAssistantDevice():
         sensor.set_discovery_info("dev", self.discovery_device)
         sensor.set_discovery_info(
             "val_tpl",
-            f"{{{{ value_json.{sensor.sensor_name.replace(' ', '_')} | round({sensor.precision}) }}}}"
+            f"{{{{ value_json.{sensor.sanitized_name} {round_str} }}}}"
         )
 
         # Add to collection of device sensors
@@ -88,7 +88,7 @@ class HomeAssistantDevice():
         msg = {}
         for number in self.numbers:
             number_data = number.read()
-            msg[number.name.replace(' ', '_')] = number_data
+            msg[number.sanitized_name] = number_data
 
         if self.debug:
             print(f"Publishing to {topic}:")
@@ -117,9 +117,9 @@ class HomeAssistantDevice():
         cached_data = {}
         for sensor in self.sensors:
             sensor_data = sensor.read()
-            data[sensor.sensor_name] = sensor_data
+            data[sensor.sanitized_name] = sensor_data
             if cache:
-                cached_data[sensor.sensor_name.replace(' ', '_')] = sensor_data
+                cached_data[sensor.sanitized_name] = sensor_data
 
         if cache:
             self.sensor_data_cache.append(cached_data)
