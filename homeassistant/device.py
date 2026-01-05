@@ -4,15 +4,15 @@ import machine
 import os
 
 from homeassistant import DISCOVERY_PREFIX
+from homeassistant.system_log import HomeAssistantSysLogEntry
 from homeassistant.number import HomeAssistantNumber
 from homeassistant.sensor import HomeAssistantSensor
-from sys import platform
 
 
 class HomeAssistantDevice():
     def __init__(self, device_name: str,
                  model: str,
-                 network_send_fxn, # Callable,
+                 network_send_fxn: Callable[[str, str], bool],
                  debug: bool = False) -> None:
         self.device_name = device_name
         self.model = model
@@ -20,6 +20,7 @@ class HomeAssistantDevice():
         self.debug = debug
         self.mf = platform
         self.device_id = f"{self.model}-{binascii.hexlify(machine.unique_id()).decode('utf-8')}"
+        self.log_topic = f"{DISCOVERY_PREFIX}/logs/{self.device_id}"
         self.number_topic = f"{DISCOVERY_PREFIX}/number/{self.device_id}"
         self.sensor_topic = f"{DISCOVERY_PREFIX}/sensor/{self.device_id}"
         self.discovery_device = {
@@ -79,6 +80,37 @@ class HomeAssistantDevice():
 
         # Add to collection of device sensors
         self.sensors.append(sensor)
+
+    def publish_logs(self, logs: list, **kwargs) -> None:
+        """Publish logs to Home Assistant via the logs topic.
+
+        Args:
+            logs (list): List of log strings OR List of HomeAssistantSysLogEntry objects.
+
+        Raises:
+            RuntimeError: If invalid log type.
+        """
+        qos = kwargs.get("qos", 1)
+
+        # Ensure log messages are of type HomeAssistantSysLogEntry
+        syslogs = []
+        if logs:
+            if isinstance(logs[0], str):
+                for log in logs:
+                    syslogs.append(HomeAssistantSysLogEntry(log))
+            elif isinstance(logs[0], bytes):
+                for log in logs:
+                    syslogs.append(HomeAssistantSysLogEntry(log.decode()))
+            elif not isinstance(logs[0], HomeAssistantSysLogEntry):
+                raise RuntimeError("Logs must be of type HomeAssistantSysLogEntry")
+            else:
+                syslogs = logs
+        else:
+            syslogs = logs
+
+        for log in syslogs:
+            msg = json.dumps(log.to_dict())
+            self.network_send_fxn(msg=msg, topic=self.log_topic, retain=True, qos=qos, **kwargs)
 
     def publish_numbers(self, **kwargs) -> None:
         """Publish all number data"""
