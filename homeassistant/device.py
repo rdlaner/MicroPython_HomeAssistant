@@ -114,6 +114,9 @@ class HomeAssistantDevice():
 
     def publish_numbers(self, **kwargs) -> None:
         """Publish all number data"""
+        if not self.numbers:
+            return
+
         topic = f"{self.number_topic}/state"
         qos = kwargs.get("qos", 1)
 
@@ -130,6 +133,9 @@ class HomeAssistantDevice():
 
     def publish_sensors(self, **kwargs) -> None:
         """Publish all cached sensor data"""
+        if not self.sensors:
+            return
+
         topic = f"{self.sensor_topic}/state"
         qos = kwargs.get("qos", 1)
 
