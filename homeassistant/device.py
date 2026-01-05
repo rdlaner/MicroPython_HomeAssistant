@@ -70,9 +70,15 @@ class HomeAssistantDevice():
         sensor.set_discovery_topic(f"{DISCOVERY_PREFIX}/sensor/{sensor_unique_id}/config")
         sensor.set_discovery_info("~", self.sensor_topic)
         sensor.set_discovery_info("obj_id", sensor.device_name)
-        sensor.set_discovery_info("stat_cla", "measurement")
         sensor.set_discovery_info("uniq_id", sensor_unique_id)
         sensor.set_discovery_info("dev", self.discovery_device)
+
+        if "device_class" not in sensor.discovery_info and "unit_of_meas" not in sensor.discovery_info:
+            round_str = ""
+        else:
+            round_str = f"| round({sensor.precision})"
+            sensor.set_discovery_info("stat_cla", "measurement")
+
         sensor.set_discovery_info(
             "val_tpl",
             f"{{{{ value_json.{sensor.sanitized_name} {round_str} }}}}"
